@@ -18,7 +18,7 @@ class SeedShop extends React.Component {
 var xhr = new XMLHttpRequest();
 
 // 2. Конфигурируем его: GET-запрос на URL 'phones.json'
-xhr.open('GET', 'http://www.metoffice.gov.uk/pub/data/weather/uk/climate/stationdata/bradforddata.txt', false);
+xhr.open('GET', 'https://github.com/zimishe/weather/blob/master/assets/bradforddata.txt', false);
 
 // 3. Отсылаем запрос
 xhr.send();
