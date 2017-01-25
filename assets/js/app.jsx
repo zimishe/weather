@@ -15,10 +15,11 @@ class SeedShop extends React.Component {
     }
 }
 
+
 var xhr = new XMLHttpRequest();
 
 // 2. Конфигурируем его: GET-запрос на URL 'phones.json'
-xhr.open('GET', 'https://github.com/zimishe/weather/blob/master/assets/bradforddata.txt', false);
+xhr.open('GET', 'https://github.com/zimishe/weather/blob/master/assets/bradforddata.txt', true);
 
 // 3. Отсылаем запрос
 xhr.send();
