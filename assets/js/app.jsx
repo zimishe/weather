@@ -42,7 +42,8 @@ function getData() {
 
 const initialState = {
     weatherData: getData(),
-    cityToShow: 702550
+    cityToShow: 702550,
+    itemsToShow: 10
 };
 
 function reducer(state = {cityToShow: 702550}, action) {
@@ -61,7 +62,11 @@ class SeedShop extends React.Component {
     }
 
     render() {
-        const weatherInfoDetailed = store.getState().weatherData.list;
+        const
+            itemsToShow = store.getState().itemsToShow,
+            weatherInfoDetailed = store.getState().weatherData.list.filter(
+            (el, i) => i < itemsToShow
+            );
         
         return (
             <div className="data">
