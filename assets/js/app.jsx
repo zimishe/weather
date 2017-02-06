@@ -2,18 +2,24 @@ const React = require('react'),
       ReactDOM = require('react-dom');
 
 import { createStore } from 'redux';
+import { connect } from 'react-redux';
 
-function getData() {
+function getData(cityId) {
+    // let cityId = '702550';
+    console.log('sss', cityId);
+    
     const xhr = new XMLHttpRequest(),
-        host = 'http://api.openweathermap.org/data/2.5/forecast/city?id=702550&units=metric&APPID=23722e5a294348674ba0d24c7f6a1497';
+        host = 'http://api.openweathermap.org/data/2.5/forecast/city?id='+cityId+'&units=metric&APPID=23722e5a294348674ba0d24c7f6a1497';
 
-    const sessionData = sessionStorage.getItem('weather');
+    // const sessionData = sessionStorage.getItem('weather');
+    const sessionData = localStorage.getItem('weather');
+    
    
     xhr.open('GET', host, true);
     
     let dataParsed;
     
-    if (sessionData == null) {
+    if (sessionData == null || cityId !== undefined) {
         xhr.send();
 
         xhr.onreadystatechange = () => {
@@ -26,7 +32,8 @@ function getData() {
                 
                 if (response.cod == '200') {
                     console.log('Data received');
-                    sessionStorage.setItem('weather', JSON.stringify(response));
+                    // sessionStorage.setItem('weather', JSON.stringify(response));
+                    localStorage.setItem('weather', JSON.stringify(response));
                     
                     console.log('Data set to sessionStorage');
                 }   else {
@@ -36,31 +43,116 @@ function getData() {
         };
         
     }   else {
-        return dataParsed = JSON.parse(sessionStorage.getItem('weather'));
+        // return dataParsed = JSON.parse(sessionStorage.getItem('weather'));
+        return dataParsed = JSON.parse(localStorage.getItem('weather'));
     }
 }
+
+const toShowArr = [4, 10, 15];
+
+const citiesList = [
+    {
+        city: 'Lviv',
+        code: 702550
+    },
+    {
+        city: 'Kyiv',
+        code: 703448
+    },
+    {
+        city: 'Zhytomyr',
+        code: 686967
+    }
+];
 
 const initialState = {
     weatherData: getData(),
     cityToShow: 702550,
-    itemsToShow: 10
+    itemsToShow: 10,
+    itemsShow: toShowArr,
+    citiesList: citiesList
 };
 
-function reducer(state = {cityToShow: 702550}, action) {
+
+function reducer(state = {cityToShow: 702550, itemsToShow: 10, weatherData: getData(), itemsShow: toShowArr}, action) {
     switch (action.type) {
-        case 'CHANGE_CITY' : return { cityToShow: 702550 };
+        case 'CHANGE_CITY' : return {
+            itemsToShow: state.itemsToShow,
+            weatherData: state.weatherData,
+            itemsShow: state.itemsShow,
+            cityToShow: action.receivedCity,
+            citiesList: state.citiesList
+        };
+        case 'SET_ITEMS_TO_SHOW' : return { 
+            itemsToShow: action.receivedItems, 
+            weatherData: state.weatherData,
+            itemsShow: state.itemsShow,
+            cityToShow: state.cityToShow,
+            citiesList: state.citiesList
+        };
         
         default : return state
     }
 }
 
+function setItemsToShow(receivedItems) {
+    return {
+        type: 'SET_ITEMS_TO_SHOW', receivedItems : receivedItems
+    }
+}
+
+function setCityToShow(receivedCity) {
+    return {
+        type: 'CHANGE_CITY', receivedCity : receivedCity
+    }
+}
+
 const store = createStore(reducer, initialState);
 
-class SeedShop extends React.Component {
+class ChooseCity extends React.Component {
+    constructor(props) {
+        super(props);
+        
+        this.setCity = this.setCity.bind(this)
+    }
+    
+    setCity(event) {
+        let receivedCity = event.target.value.toString();
+        
+        store.dispatch(setCityToShow(receivedCity));
+        getData(receivedCity);
+    }
+    
+    render() {
+        let currentCity = store.getState().cityToShow;
+        
+        return (
+            <select className="city-select" value={currentCity} onChange={this.setCity.bind(this)}>
+                {
+                    store.getState().citiesList.map(
+                        (el, i) => 
+                        <option key={i} value={el.code}>
+                            {el.city}
+                        </option>
+                    )
+                }
+            </select>
+        )
+    }
+}
+
+
+class Weather extends React.Component {
     constructor(props) {
         super(props);
     }
 
+    componentDidMount() {
+        getData();
+        
+        store.subscribe(() => this.forceUpdate());
+    }
+    
     render() {
         const
             itemsToShow = store.getState().itemsToShow,
@@ -85,14 +177,11 @@ class SeedShop extends React.Component {
                     }
                     
                 </div>
+                <ItemsToShow />
+                <ChooseCity />
             </div>
         )
     }
-    
-    componentDidMount() {
-        getData();
-    }
-    
 }
 
 
@@ -132,6 +221,37 @@ class DayInfo extends React.Component {
     }
 }
 
+class ItemsToShow extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.setItemsNumber = this.setItemsNumber.bind(this);
+    }
+
+    setItemsNumber(event) {
+
+        let dataReceived = parseInt(event.target.getAttribute('data-items'));
+
+        store.dispatch(setItemsToShow(dataReceived));
+    }
+
+    render()   {
+        return (
+            <ul className="items-to-show">
+                {store.getState().itemsShow.map(
+                    (el, i) =>
+                        <li key={i}>
+                            <a onClick={this.setItemsNumber.bind(this)}
+                               data-items={el}>
+                                {el}
+                            </a>
+                        </li>
+                )}
+            </ul>
+        )
+    }
+}
+
 class Header extends React.Component {
     constructor(props) {
         super(props);
@@ -145,17 +265,17 @@ class Header extends React.Component {
         
         return (
             <div className="header">
-                Displaying weather in {cityName}, {countryCode}
+                <p>Displaying weather in {cityName}, {countryCode}</p>
             </div>
         )
     }
 }
 
-
 //render all
 
 ReactDOM.render(
-    <SeedShop />,
+    <Weather />,
     document.querySelector('.wrapper')
 );
+
 

@@ -107,7 +107,8 @@ const CARDS = [
 
 const initialState = {
     count: 0,
-    addedOnTop: []
+    addedOnTop: [],
+    cardInfo: CARDS
 };
 
 function reducer(state = { count: 0, addedOnTop: []}, action) {
@@ -118,7 +119,17 @@ function reducer(state = { count: 0, addedOnTop: []}, action) {
     }
 }
 
-const incrementAction = { type: 'ADD', amount: 1, addedItem : {key: 22, name: 'Some Name'}};
+function incrementAction(storeState, curAddedItem) {
+    storeState.push(curAddedItem);
+    
+    return {
+        type: 'ADD', amount: 1, addedItem : storeState
+    }
+}
+
+function searchAction(updatedState) {
+
+}
 
 const store = createStore(reducer, initialState);
 
@@ -129,9 +140,9 @@ class SeedShop extends React.Component {
         this.state = {
             cardInfo: CARDS
         };
-
-        this.addToCart = this.addToCart.bind(this);
+        
         this.handleSearch = this.handleSearch.bind(this);
+        this.showAdded = this.showAdded.bind(this);
     }
 
     componentDidMount() {
@@ -139,6 +150,8 @@ class SeedShop extends React.Component {
     }
 
     handleSearch(event) {
+        // console.log('cards', store)
+
         let searchQuery = event.target.value.toLowerCase();
 
         let cardInfo = CARDS.filter(function(el) {
@@ -151,47 +164,45 @@ class SeedShop extends React.Component {
         });
     }
 
-    addToCart(e) {
-        let target = e.target;
 
-        function setCounter() {
+    showAdded(e) {
+        let data = parseInt(e.target.parentNode.getAttribute('data-counter'));
+        let cart = document.querySelector('.cart__added');
 
-            if (!target.classList.contains('disabled')) {
-                target.classList.add('disabled');
-                target.setAttribute('disabled', 'disabled');
-
-                store.dispatch(incrementAction);
-            }
+        if (data > 0) {
+            cart.classList.toggle('active');
         }
-
-        setCounter();
-
-        // currentAddedToCart.push(
-        //     {
-        //         id: 1,
-        //         key: 1,
-        //         name: 'zalupa'
-        //     }
-        // );
     }
-    
+
 
     render() {
-        let addFunc = this.addToCart;
-
-        const addedItemsCounter = store.getState().count;
-        const addedItem = store.getState().addedOnTop;
-
-        console.log('addedI', addedItem);
+        let addedItemsCounter = store.getState().count;
 
         return (
             <div className="shop">
                 <div className="header">
                     <HeaderLogo/>
                     <div className="cart">
-                        <a href="#" data-counter={addedItemsCounter}>
+                        <a className="cart--toggle" data-counter={addedItemsCounter} onClick={this.showAdded}>
                             <img src="assets/img/cart.png" alt="Cart"/>
                         </a>
+                        <div className="cart__added">
+                            {/*{console.log('sss', store.getState().addedOnTop)}*/}
+
+                            {
+                                store.getState().addedOnTop.map(function(el, i) {
+                                    return <AddedItem
+                                        key={el.key}
+                                        id={el.key}
+                                        name={el.name}
+                                        priceNew={el.price}
+                                    />;
+                                })
+                            }
+                            <div className="cart__added__checkout">
+                                <button className="cart-checkout">Оформити замовлення</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="content">
@@ -203,28 +214,26 @@ class SeedShop extends React.Component {
                         </div>
 
                         <div className="cards__items__list">
-
                             {
                                 this.state.cardInfo.map(function(el) {
                                     return <CardItem
                                         key={el.id}
+                                        id={el.id}
                                         name={el.name}
                                         discount={el.discount}
                                         special={el.special}
                                         priceOld={el.priceOld}
                                         priceNew={el.priceNew}
-                                        handleClick={addFunc}
                                     />;
                                 })
                             }
-
                         </div>
                     </div>
                 </div>
             </div>
         )
     }
-};
+}
 
 class SearchForm extends React.Component {
     render() {
@@ -239,15 +248,77 @@ class SearchForm extends React.Component {
     }
 }
 
+class AddedItem extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.removeItem = this.removeItem.bind(this);
+    }
+
+    removeItem(idToRemove) {
+        console.log('got', idToRemove);
+    }
+
+    render() {
+        const id = this.props.id;
+        // console.log('id', id);
+
+        return (
+            <div className="cards__item">
+                <div className="cards__item__info">
+                    <div className="cards__item__name">
+                        <a>{this.props.name}</a>
+                    </div>
+                    <div className="cards__item__bottom">
+                        <div className="cards__item__price">
+                            <div className="cards__item__price--new">
+                                <p><strong>{this.props.priceNew}</strong> грн</p>
+                            </div>
+                        </div>
+                        <button className="remove-from-cart" onClick={this.removeItem.bind(this, id)}>
+                            Видалити
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+}
 
 class CardItem extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.addToCart = this.addToCart.bind(this);
+    }
+
+    addToCart(key, name, price, event) {
+        let target = event.target;
+        
+        function setCounter() {
+            if (!target.classList.contains('disabled')) {
+                target.classList.add('disabled');
+                target.setAttribute('disabled', 'disabled');
+                
+                store.dispatch(incrementAction(store.getState().addedOnTop, {key: key, name: name, price: price}));
+                // console.log('store upd', store.getState().addedOnTop);
+            }
+        }
+        
+        setCounter();
+    }
+    
     render() {
         const photoStyle = {
             backgroundImage: "url('assets/img/card1.jpg')"
         };
+        
+        const key = this.props.id;
+        const name = this.props.name;
+        const price = this.props.priceNew;
 
         const discount = this.props.discount,
-            special = this.props.special;
+              special = this.props.special;
 
         function checkDiscount() {
             if (discount !== '') {
@@ -299,32 +370,8 @@ class CardItem extends React.Component {
                                 <p><strong>{this.props.priceNew}</strong> грн</p>
                             </div>
                         </div>
-                        <button className="add-to-cart" onClick={this.props.handleClick}>
+                        <button className="add-to-cart" onClick={this.addToCart.bind(this, key, name, price)}>
                             Купить
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-}
-
-class AddedItem extends React.Component {
-    render() {
-        return (
-            <div className="cards__item">
-                <div className="cards__item__info">
-                    <div className="cards__item__name">
-                        <a>{this.props.name}</a>
-                    </div>
-                    <div className="cards__item__bottom">
-                        <div className="cards__item__price">
-                            <div className="cards__item__price--new">
-                                <p><strong>{this.props.priceNew}</strong> грн</p>
-                            </div>
-                        </div>
-                        <button className="remove-from-cart" onClick={this.props.handleClick}>
-                            Удалить
                         </button>
                     </div>
                 </div>
