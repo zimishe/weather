@@ -95,6 +95,7 @@ function reducer(state = {cityToShow: 702550, itemsToShow: 10, weatherData: getD
     }
 }
 
+
 function setItemsToShow(receivedItems) {
     return {
         type: 'SET_ITEMS_TO_SHOW', receivedItems : receivedItems
@@ -119,8 +120,10 @@ class ChooseCity extends React.Component {
     setCity(event) {
         let receivedCity = event.target.value.toString();
         
-        store.dispatch(setCityToShow(receivedCity));
         getData(receivedCity);
+        store.dispatch(setCityToShow(receivedCity));
+        
+        this.forceUpdate()
     }
     
     render() {
@@ -258,7 +261,7 @@ class Header extends React.Component {
     }
     
     render() {
-        console.log('data', store.getState().weatherData);
+        // console.log('data', store.getState().weatherData);
         
         const cityName = store.getState().weatherData.city.name,
               countryCode = store.getState().weatherData.city.country;
